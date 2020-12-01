@@ -3,6 +3,7 @@ from random import random
 import os
 import yaml
 import re
+from sys import argv
 
 """
     Data generation script,
@@ -20,8 +21,20 @@ import re
             mean: (mean for noise)
     --------------------------------
 """
+expected_format_message = ("Expected values in configuration file:\n" + "-" * 50 +
+                           "\ndata-path: (path)\nnumber-of-entries: (number of entries, integer)" +
+                           "\n\nvoltage:\n\tmaximum: (maximum reading)" +
+                           "\n\tnoise-distribution:\n\t\tstandard-deviation: (deviation for noise)" +
+                           "\n\t\tmean: (mean for noise)" +
+                           "\n\ncurrent:\n\tmaximum: (maximum reading)" +
+                           "\n\tnoise-distribution:\n\t\tstandard-deviation: (deviation for noise)" +
+                           "\n\t\tmean: (mean for noise)" +
+                           "\n\ntemperature:\n\tmaximum: (maximum reading)" +
+                           "\n\tnoise-distribution:\n\t\tstandard-deviation: (deviation for noise)" +
+                           "\n\t\tmean: (mean for noise)\n" + "-" * 50)
 
 
+# Takes parsed values and generates file
 def generate_csv(file_path, n, voltage_max, voltage_noise, current_max, current_noise, temp_max, temp_noise):
     file = open(file_path, "a")
     file.write("Time (ms),Voltage (V) ,Current (A),Temperature (C)\n")
@@ -37,32 +50,26 @@ def generate_csv(file_path, n, voltage_max, voltage_noise, current_max, current_
         file.write(line + '\n')
 
 
+# Takes config to generate data file using generate_csv
 def generate_data(file_path):
-    expected_format_message = ("\033[91mExpected values:\n" + "-" * 50 +
-                               "\ndata-path: (path)\nnumber-of-entries: (number of entries, integer)" +
-                               "\n\nvoltage:\n\tmaximum: (maximum reading)" +
-                               "\n\tnoise-distribution:\n\t\tstandard-deviation: (deviation for noise)" +
-                               "\n\t\tmean: (mean for noise)" +
-                               "\n\ncurrent:\n\tmaximum: (maximum reading)" +
-                               "\n\tnoise-distribution:\n\t\tstandard-deviation: (deviation for noise)" +
-                               "\n\t\tmean: (mean for noise)" +
-                               "\n\ntemperature:\n\tmaximum: (maximum reading)" +
-                               "\n\tnoise-distribution:\n\t\tstandard-deviation: (deviation for noise)" +
-                               "\n\t\tmean: (mean for noise)\n" + "-" * 50)
-
+    # Parse configuration file
     with open(file_path) as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
 
         try:
+            # Check file path and if file exists
             config['data-path'] = re.sub('(\.[a-zA-Z0-9]*)*$', '.csv', config['data-path'], count=1)
             if os.path.exists(config['data-path']):
                 os.remove(config['data-path'])
+                print("Clearing existing data...")
 
+            # Parse noise, KeyError will be thrown if missing in config
             noise = {}
             for i in ('voltage', 'current', 'temperature'):
                 noise[i] = {'sigma': float(config[i]['noise-distribution']['standard-deviation']),
                             'mu': float(config[i]['noise-distribution']['mean'])}
 
+            # Call generate_csv to actually generate data, KeyError or ValueError will be thrown if issue in config
             generate_csv(config['data-path'], int(config['number-of-entries']),
                          float(config['voltage']['maximum']), noise['voltage'],
                          float(config['current']['maximum']), noise['current'],
@@ -70,17 +77,27 @@ def generate_data(file_path):
 
             print("\033[32mSuccessfully generated data at " + config['data-path'])
         except KeyError as e:
+            # Parsing error: missing value in yml file
             print("\033[91mInvalid configuration, missing " + e.args[0] + "\n")
             print(expected_format_message)
         except ValueError as e:
+            # Parsing error: value has the wrong type in yml file
             print("\033[91mInvalid configuration, wrong types\n" + e.args[0] + "\n")
             print(expected_format_message)
 
 
-def main():
-    generate_data('config.yml')
-    # generate_data(100000, "../test", 300.0, 100.0, 20.0)
+def main(*args):
+    try:
+        generate_data(args[1])
+    except IndexError:
+        print("usage: test_data.py <configuration file>")
+        print("This script will generate data from a given yml configuration file with the following values:\n")
+        print(expected_format_message)
+    except FileNotFoundError:
+        print("\033[91musage: test_data.py <configuration file>")
+        print("Configuration file not found, please pass yml file with the following values:\n")
+        print(expected_format_message)
 
 
 if __name__ == "__main__":
-    main()
+    main(*argv)
