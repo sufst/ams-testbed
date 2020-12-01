@@ -24,14 +24,15 @@ import re
 
 def generate_csv(file_path, n, voltage_max, voltage_noise, current_max, current_noise, temp_max, temp_noise):
     file = open(file_path, "a")
-    file.write("Time,Voltage,Temperature,Current\n")
+    file.write("Time (ms),Voltage (V) ,Current (A),Temperature (C)\n")
 
     for i in range(n):
         perc = (1000 - abs((i % 2000) - 1000)) / 1000
-        voltage, temp, current = perc * voltage_max, perc * temp_max, perc * current_max
-        v_noise, t_noise, c_noise = gauss(0, 5), gauss(0, 2), gauss(0, 0.5)
+        voltage, current, temp = perc * voltage_max, perc * current_max, perc * temp_max
+        v_noise, c_noise, t_noise = gauss(**voltage_noise), gauss(**current_noise), gauss(**temp_noise)
 
-        line = ",".join(str(val) for val in [i, max(random(), voltage + v_noise), max(random(), temp + t_noise), max(random(), current + c_noise)])
+        line = ",".join(str(val) for val in [i, max(random(), voltage + v_noise), max(random(), current + c_noise),
+                                             max(random(), temp + t_noise)])
 
         file.write(line + '\n')
 
