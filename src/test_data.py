@@ -1,8 +1,8 @@
-from random import gauss
-from random import random
 import os
 import re
+from random import gauss, random
 from sys import argv, exit
+
 import yaml
 from yaml.scanner import ScannerError
 
