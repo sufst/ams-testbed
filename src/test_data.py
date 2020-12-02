@@ -2,7 +2,7 @@ from random import gauss
 from random import random
 import os
 import re
-from sys import argv
+from sys import argv, exit
 import yaml
 from yaml.scanner import ScannerError
 
@@ -63,11 +63,10 @@ def generate_data(file_path):
         except ScannerError as e:
             print("\033[91mInvalid configuration, is not valid yaml: ", end='')
             print(e)
-            return
+            quit(1)
 
         if not isinstance(config, dict):
             printError("Invalid configuration, is not valid yaml\nConfiguration should be in following format")
-            return
 
         try:
             # Check file path and if file exists
@@ -91,39 +90,42 @@ def generate_data(file_path):
             print("\033[32mSuccessfully generated data at " + config['data-path'])
         except KeyError as e:
             # Parsing error: missing value in yml file
-            printError("\033[91mInvalid configuration, missing " + e.args[0], printUsage=False)
+            printError("\033[91mInvalid configuration, missing " + e.args[0], print_usage=False)
         except ValueError as e:
             # Parsing error: value has the wrong type in yml file
-            printError("\033[91mInvalid configuration, wrong types\n" + e.args[0], printUsage=False)
+            printError("\033[91mInvalid configuration, wrong types\n" + e.args[0], print_usage=False)
 
 
 # Printing errors (used for usage and most parse errors)
-def printError(message=generic_script_message, printInRed=True, printUsage=True):
-    if printInRed:
+def printError(message=generic_script_message, print_usage=True, print_expected=True, exit_code=1):
+    if exit_code == 1:
         print("\033[91m", end='')
 
-    if printUsage:
-        print(usage_message)
+    if print_usage:
+        print(usage_message + "\n")
 
-    print(message + "\n\n" + expected_format_message)
+    print(message)
+
+    if print_expected:
+        print("\n\n" + expected_format_message)
+
+    exit(exit_code)
 
 
 def main(*args):
     try:
         if args[1] == '-h' or args[1] == '--help':
-            printError(printInRed=False)
-            return
+            printError(exit_code=0)
 
         split_path = args[1].split(".", 1)
         if len(split_path) < 2 or split_path[1] != 'yml':
             printError("Not a yaml file, configuration file should end in .yml")
-            return
 
         generate_data(args[1])
     except IndexError:
-        printError(printInRed=False)
+        printError(exit_code=0)
     except FileNotFoundError:
-        printError("Configuration file not found", printUsage=False)
+        printError("Configuration file not found", print_usage=False, print_expected=False)
 
 
 if __name__ == "__main__":
