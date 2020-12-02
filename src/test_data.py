@@ -1,9 +1,10 @@
 from random import gauss
 from random import random
 import os
-import yaml
 import re
 from sys import argv
+import yaml
+from yaml.scanner import ScannerError
 
 """
     Data generation script,
@@ -21,6 +22,9 @@ from sys import argv
             mean: (mean for noise)
     --------------------------------
 """
+
+usage_message = "usage: test_data.py <configuration file>"
+generic_script_message = "This script will generate data from a given yml configuration file"
 expected_format_message = ("Expected values in configuration file:\n" + "-" * 50 +
                            "\ndata-path: (path)\nnumber-of-entries: (number of entries, integer)" +
                            "\n\nvoltage:\n\tmaximum: (maximum reading)" +
@@ -54,7 +58,18 @@ def generate_csv(file_path, n, voltage_max, voltage_noise, current_max, current_
 def generate_data(file_path):
     # Parse configuration file
     with open(file_path) as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+        try:
+            config = yaml.load(file, Loader=yaml.FullLoader)
+        except ScannerError as e:
+            print("\033[91mInvalid configuration, is not valid yaml: ", end='')
+            print(e)
+            return
+
+        if not isinstance(config, dict):
+            print("\033[91mInvalid configuration, is not valid yaml")
+            print("Configuration should be in following format\n")
+            print(expected_format_message)
+            return
 
         try:
             # Check file path and if file exists
@@ -85,9 +100,21 @@ def generate_data(file_path):
             print("\033[91mInvalid configuration, wrong types\n" + e.args[0] + "\n")
             print(expected_format_message)
 
-
 def main(*args):
     try:
+        split_path = args[1].split(".", 1)
+        if len(split_path) < 2 or split_path[1] != 'yml':
+            print("\033[91mUsage: test_data.py <configuration file>")
+            print("Not a yaml file, configuration file should end in .yml\n")
+            print(expected_format_message)
+            return
+
+        if args[1] == '-h':
+            print("usage: test_data.py <configuration file>")
+            print("This script will generate data from a given yml configuration file with the following values:\n")
+            print(expected_format_message)
+            return
+
         generate_data(args[1])
     except IndexError:
         print("usage: test_data.py <configuration file>")
