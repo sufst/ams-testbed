@@ -66,9 +66,7 @@ def generate_data(file_path):
             return
 
         if not isinstance(config, dict):
-            print("\033[91mInvalid configuration, is not valid yaml")
-            print("Configuration should be in following format\n")
-            print(expected_format_message)
+            printError("Invalid configuration, is not valid yaml\nConfiguration should be in following format")
             return
 
         try:
@@ -93,37 +91,39 @@ def generate_data(file_path):
             print("\033[32mSuccessfully generated data at " + config['data-path'])
         except KeyError as e:
             # Parsing error: missing value in yml file
-            print("\033[91mInvalid configuration, missing " + e.args[0] + "\n")
-            print(expected_format_message)
+            printError("\033[91mInvalid configuration, missing " + e.args[0], printUsage=False)
         except ValueError as e:
             # Parsing error: value has the wrong type in yml file
-            print("\033[91mInvalid configuration, wrong types\n" + e.args[0] + "\n")
-            print(expected_format_message)
+            printError("\033[91mInvalid configuration, wrong types\n" + e.args[0], printUsage=False)
+
+
+# Printing errors (used for usage and most parse errors)
+def printError(message=generic_script_message, printInRed=True, printUsage=True):
+    if printInRed:
+        print("\033[91m", end='')
+
+    if printUsage:
+        print(usage_message)
+
+    print(message + "\n\n" + expected_format_message)
+
 
 def main(*args):
     try:
-        split_path = args[1].split(".", 1)
-        if len(split_path) < 2 or split_path[1] != 'yml':
-            print("\033[91mUsage: test_data.py <configuration file>")
-            print("Not a yaml file, configuration file should end in .yml\n")
-            print(expected_format_message)
+        if args[1] == '-h' or args[1] == '--help':
+            printError(printInRed=False)
             return
 
-        if args[1] == '-h':
-            print("usage: test_data.py <configuration file>")
-            print("This script will generate data from a given yml configuration file with the following values:\n")
-            print(expected_format_message)
+        split_path = args[1].split(".", 1)
+        if len(split_path) < 2 or split_path[1] != 'yml':
+            printError("Not a yaml file, configuration file should end in .yml")
             return
 
         generate_data(args[1])
     except IndexError:
-        print("usage: test_data.py <configuration file>")
-        print("This script will generate data from a given yml configuration file with the following values:\n")
-        print(expected_format_message)
+        printError(printInRed=False)
     except FileNotFoundError:
-        print("\033[91musage: test_data.py <configuration file>")
-        print("Configuration file not found, please pass yml file with the following values:\n")
-        print(expected_format_message)
+        printError("Configuration file not found", printUsage=False)
 
 
 if __name__ == "__main__":
