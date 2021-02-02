@@ -1,0 +1,20 @@
+data-path: "test_data"
+number-of-entries: 1000
+
+voltage:
+  maximum: 300
+  noise-distribution:
+    standard-deviation: 5
+    mean: 0
+
+current:
+  maximum: 20
+  noise-distribution:
+    standard-deviation: 0.5
+    mean: 0
+
+temperature:
+  maximum: 100
+  noise-distribution:
+    standard-deviation: 2
+    mean: 0
